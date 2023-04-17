@@ -1,0 +1,14 @@
+FROM python:3.8-slim-buster
+WORKDIR /bookapp
+
+COPY requirements.txt /bookapp/requirements.txt
+RUN pip3 install -r requirements.txt
+
+COPY . /bookapp
+
+EXPOSE 5004
+
+# Start the Flask app
+#ENTRYPOINT [ "python" ]
+#CMD [ "app.py" ]
+CMD ["ddtrace-run" "python" "app.py" "-Ddd.service=book" "-Ddd.env=micro-service" "-Ddd.version=1.1"]

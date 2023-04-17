@@ -1,0 +1,14 @@
+FROM python:3.8-slim-buster
+WORKDIR /userapp
+
+COPY requirements.txt /userapp/requirements.txt
+RUN pip3 install -r requirements.txt
+
+COPY . /userapp
+
+EXPOSE 5003
+
+# Start the Flask app
+#ENTRYPOINT [ "python" ]
+#CMD [ "app.py" ]
+CMD ["ddtrace-run" "python" "app.py" "-Ddd.service=user" "-Ddd.env=micro-service" "-Ddd.version=1.1"]
