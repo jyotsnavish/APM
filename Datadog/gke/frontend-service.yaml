@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service" 
+    tags.datadoghq.com/service: "frontend-service" 
+    tags.datadoghq.com/version: "1.1" 
+spec:
+  selector:
+    matchLabels:
+      app: book-store 
+      name: fronted-pod
+  template:
+    metadata:
+      name: fronted-pod
+      labels: 
+        app: book-store
+        name: fronted-pod
+        tags.datadoghq.com/env: "micro-service" 
+        tags.datadoghq.com/service: "fronted-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:  
+      - name: frontend-svc-c
+        image: jyotsnavish/datadog-apm:frontend
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5005
+        env:
+        - name: USER_HOST
+          value: user-svc-c
+        - name: ORDER_HOST
+          value: order-svc-c
+        - name: BOOK_HOST
+          value: book-svc-c
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc-c
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service" 
+    tags.datadoghq.com/service: "frontend-service" 
+    tags.datadoghq.com/version: "1.1"
+spec:
+  type: LoadBalancer
+  selector:
+    name: fronted-pod
+    app: book-store 
+  ports:
+  - protocol: TCP
+    port: 5005
+    targetPort: 5005

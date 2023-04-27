@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "order-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  selector:
+    matchLabels:
+      name: order-pod
+      app: book-store
+  template:
+    metadata:
+      name: order-pod
+      labels:
+        name: order-pod
+        app: book-store
+        tags.datadoghq.com/env: "micro-service"
+        tags.datadoghq.com/service: "order-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:
+      - name: order-svc-c
+        image: jyotsnavish/datadog-apm:order
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5002
+        env:
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-svc-c
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "order-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  type: ClusterIP
+  selector:
+    name: order-pod
+    app: book-store
+  ports:
+  - protocol: TCP
+    port: 5002
+    targetPort: 5002

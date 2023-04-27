@@ -1,0 +1,273 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service" 
+    tags.datadoghq.com/service: "frontend-service" 
+    tags.datadoghq.com/version: "1.1" 
+spec:
+  selector:
+    matchLabels:
+      app: book-store 
+      name: fronted-pod
+  template:
+    metadata:
+      name: fronted-pod
+      labels: 
+        app: book-store
+        name: fronted-pod
+        tags.datadoghq.com/env: "micro-service" 
+        tags.datadoghq.com/service: "fronted-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:  
+      - name: frontend-svc-c
+        image: jyotsnavish/datadog-apm:frontend
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5005
+        env:
+        - name: USER_HOST
+          value: user-svc-c
+        - name: ORDER_HOST
+          value: order-svc-c
+        - name: BOOK_HOST
+          value: book-svc-c
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc-c
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service" 
+    tags.datadoghq.com/service: "frontend-service" 
+    tags.datadoghq.com/version: "1.1"
+spec:
+  type: LoadBalancer
+  selector:
+    name: fronted-pod
+    app: book-store 
+  ports:
+  - protocol: TCP
+    port: 5005
+    targetPort: 5005
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "order-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  selector:
+    matchLabels:
+      name: order-pod
+      app: book-store
+  template:
+    metadata:
+      name: order-pod
+      labels:
+        name: order-pod
+        app: book-store
+        tags.datadoghq.com/env: "micro-service"
+        tags.datadoghq.com/service: "order-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:
+      - name: order-svc-c
+        image: jyotsnavish/datadog-apm:order
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5002
+        env:
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-svc-c
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "order-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  type: ClusterIP
+  selector:
+    name: order-pod
+    app: book-store
+  ports:
+  - protocol: TCP
+    port: 5002
+    targetPort: 5002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service" 
+    tags.datadoghq.com/service: "book-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  selector:
+    matchLabels:
+      app: book-store
+      name: book-pod
+  template:
+    metadata:
+      name: book-pod
+      labels:
+        app: book-store
+        name: book-pod
+        tags.datadoghq.com/env: "micro-service"
+        tags.datadoghq.com/service: "book-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:
+      - name: book-svc-c
+        image: jyotsnavish/datadog-apm:book
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5004
+        env:
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-svc-c
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service" 
+    tags.datadoghq.com/service: "book-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  type: ClusterIP
+  selector:
+    name: book-pod
+    app: book-store
+  ports:
+  - protocol: TCP
+    port: 5004
+    targetPort: 5004
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "user-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  selector:
+    matchLabels:
+      app: book-store
+      name: user-pod
+  template:
+    metadata:
+      name: user-pod
+      labels:
+        name: user-pod
+        app: book-store
+        tags.datadoghq.com/env: "micro-service"
+        tags.datadoghq.com/service: "user-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:
+      - name: user-svc-c
+        image: jyotsnavish/datadog-apm:user
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5003
+        env:
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-svc-c
+  labels:
+    app: book-store
+    name: user-pod
+spec:
+  type: ClusterIP
+  selector:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "user-service"
+    tags.datadoghq.com/version: "1.1"
+  ports:
+  - protocol: TCP
+    port: 5003
+    targetPort: 5003

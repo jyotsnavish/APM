@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-deploy
+  labels:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "user-service"
+    tags.datadoghq.com/version: "1.1"
+spec:
+  selector:
+    matchLabels:
+      app: book-store
+      name: user-pod
+  template:
+    metadata:
+      name: user-pod
+      labels:
+        name: user-pod
+        app: book-store
+        tags.datadoghq.com/env: "micro-service"
+        tags.datadoghq.com/service: "user-service"
+        tags.datadoghq.com/version: "1.1"
+    spec:
+      containers:
+      - name: user-svc-c
+        image: jyotsnavish/datadog-apm:user
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 100m
+            memory: 72Mi
+        ports:
+        - containerPort: 5003
+        env:
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/env']
+        - name: DD_SERVICE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/service']
+        - name: DD_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tags.datadoghq.com/version']
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-svc-c
+  labels:
+    app: book-store
+    name: user-pod
+spec:
+  type: ClusterIP
+  selector:
+    app: book-store
+    tags.datadoghq.com/env: "micro-service"
+    tags.datadoghq.com/service: "user-service"
+    tags.datadoghq.com/version: "1.1"
+  ports:
+  - protocol: TCP
+    port: 5003
+    targetPort: 5003

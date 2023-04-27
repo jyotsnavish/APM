@@ -1,0 +1,75 @@
+Steps for enabling tracing on a sample microservice Python application installed in a container. In this scenario, the Datadog Agent is installed on a host.
+
+Prerequisites:
+A Datadog account and organization API key
+Python that meets the tracing library requirements
+
+Install datadog agent on your host:
+Ensure your Agent is configured to receive trace data from containers. Open its configuration file and ensure apm_config: is uncommented, and apm_non_local_traffic is uncommented and set to true. (/etc/datadog/datadog-agent.yaml)
+
+Enable Tracing:
+1.Add the Python tracing package to your project. Open the file user/requirements.txt, and add ddtrace to the list if it is not already there: (perform the same for order, frontend, book folders)
+
+2.Within the applications Dockerfile, user/dockerfile, change the CMD line that starts the application to use the ddtrace package: (perform the same for order, frontend, book folders)
+# Run the application with Datadog
+ENTRYPOINT ["ddtrace-run"]
+CMD python3 app.py
+
+This automatically instruments the application with Datadog services.
+
+3.Apply Universal Service Tags, which identify traced services across different versions and deployment environments.
+ENV DD_SERVICE="user-svc"
+ENV DD_ENV="micro"
+ENV DD_VERSION="0.1.0"
+
+4.Add Docker labels that correspond to the Universal Service Tags. This allows you also to get Docker metrics once your application is running.
+LABEL com.datadoghq.tags.service="user-svc"
+LABEL com.datadoghq.tags.env="micro"
+LABEL com.datadoghq.tags.version="0.1.0"
+
+
+Configure the container to send traces to the Agent:
+Open the compose file for the containers, docker-compose.yaml.
+In the order, user, frontend, book container section, add the environment variable DD_AGENT_HOST and specify the hostname of the Agent container:
+environment:
+  - DD_AGENT_HOST=host.docker.internal
+
+
+On Linux: Also add an extra_host to the compose file to allow communication on Docker’s internal network. The frontend section of your compose file should look something like this:
+extra_hosts:                         
+  - "host.docker.internal:host-gateway"  
+
+    
+Start the agent:
+systemctl start datadog-agent
+
+Launch the containerized application to see the automatic tracing:
+docker compose -f docker-compose.yml build 
+
+Run the container:
+docker compose -f docker-compose.yml up -d
+
+Generate some traffic:
+curl localhost:5005
+curl localhost:5005/login
+curl localhost:5005/register
+
+********************************************************************************************************************************************************************************************
+Steps for enabling tracing on a sample microservice Python application. Deploy the application in GKE along with Datadog agent running on it.
+
+Install Datadog agent:
+helm repo add datadog https://helm.datadoghq.com
+helm repo update
+helm install datadog-agent -f Datadog/gke/datadog-values.yaml  --set datadog.apiKey=<API-KEY> datadog/datadog --set targetSystem=linux
+
+Deploy the application:
+kubectl apply -f frontend-service.yaml
+kubectl apply -f user-service.yaml
+kubectl apply -f book-service.yaml
+kubectl apply -f order-service.yaml
+
+kubectl get pods
+kubectl get svc
+
+kubectl edit svc frontend (can make port to 80 from 5005)
+
